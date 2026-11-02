@@ -1,0 +1,35 @@
+# ---- Python ---------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# ---- Secrets --------------------------------------------------------------
+# .env.example is committed; the real files are not.
+.env
+.env.local
+frontend/.env
+frontend/.env.local
+
+# ---- Node / frontend ------------------------------------------------------
+frontend/node_modules/
+frontend/dist/
+npm-debug.log*
+*.tsbuildinfo
+
+# ---- Editors and OS -------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Local artifacts ------------------------------------------------------
+# Original Figma Make export of the UI; superseded by frontend/src.
+Build LeaseLens Lease Analyzer.zip

@@ -1,0 +1,1015 @@
+# =============================================================================
+# LeaseLens rule base - Tamil Nadu tenancy benchmarks
+# =============================================================================
+# Every rule is DATA. The engine (app/services/rule_engine.py) interprets
+# `field` / `operator` / `value` with plain Python comparisons; there are no
+# expressions to eval, so editing this file cannot execute code.
+#
+# Editing contract:
+#   * `field` must be an attribute of app.models.clause.ClauseEntities.
+#   * `operator` must be one of app.models.enums.RuleOperator.
+#   * `value` is the statutory threshold, in the unit named by `unit`.
+#   * `penalty_group` prevents double-counting when several rules test the same
+#     fact (only the highest-severity violation in a group scores).
+#   * `statute.quote` must be verbatim from the Act; `verification` records how
+#     carefully the citation was checked.
+#
+# Quotations below are taken from Act 42 of 2017 as published on Indian Kanoon.
+# They are legal benchmarks, NOT legal advice. See `meta.statute.note`.
+# =============================================================================
+
+meta:
+  statute:
+    act: &act "Tamil Nadu Regulation of Rights and Responsibilities of Landlords and Tenants Act, 2017"
+    short_name: "TN RRRLLT Act, 2017"
+    act_number: "Act 42 of 2017"
+    jurisdiction: "Tamil Nadu, India"
+    year: 2017
+    source_url: &act_url "https://indiankanoon.org/doc/134441806/"
+    as_at: "2026-11-02"
+    note: >-
+      Benchmarks are the statutory defaults read from Act 42 of 2017. Several
+      provisions (notably s.9 and s.11) apply "save as agreed in the agreement",
+      so a clause may be lawful yet still commercially unfavourable. Flagging it
+      is a negotiation signal, not a declaration of illegality. Confirm the
+      current text - including the 2022 amendment and the Tamil Nadu rules - with
+      counsel before relying on a citation.
+  scoring:
+    version: "1.1.0"
+    # Base points awarded to the single worst violation in the document.
+    severity_points:
+      critical: 80
+      high: 55
+      moderate: 28
+      low: 10
+      info: 0
+    # Multiplier reflecting how much money / control each domain involves.
+    # A deposit breach outranks a keys-retention clause for the same severity.
+    category_importance:
+      deposit: 1.15
+      eviction: 1.10
+      rent_hike: 1.10
+      lock_in: 1.02
+      entry_rights: 0.90
+      maintenance: 0.90
+      general: 0.85
+    # Additional distinct violations add breadth (diminishing, capped) so that
+    # several problems score worse than one, without saturating at 100.
+    breadth_bonus_per_violation: 4
+    breadth_bonus_cap: 12
+    risk_bands:
+      - level: low
+        min_score: 0
+        max_score: 19
+        label: "Low risk - largely compliant"
+      - level: moderate
+        min_score: 20
+        max_score: 39
+        label: "Moderate risk - negotiate before signing"
+      - level: elevated
+        min_score: 40
+        max_score: 59
+        label: "Elevated risk - several unfavourable terms"
+      - level: high
+        min_score: 60
+        max_score: 79
+        label: "High risk - substantial legal exposure"
+      - level: critical
+        min_score: 80
+        max_score: 100
+        label: "Critical risk - do not sign without changes"
+
+# =============================================================================
+rules:
+  # ---------------------------------------------------------------- deposit --
+  - id: DEP-001
+    category: deposit
+    title: "Security deposit exceeds three months' rent"
+    severity: high
+    field: deposit_months
+    operator: greater_than
+    value: 3
+    unit: months
+    penalty_group: deposit_quantum
+    tags: [deposit, headline]
+    explanation: >-
+      The agreement asks for {observed} months of rent as security deposit. Under
+      the Act a deposit above three times the monthly rent is unlawful unless a
+      contrary term was expressly agreed, and in practice anything above three
+      months is the single largest cash exposure a tenant takes on. You would be
+      locking up {observed} months of rent for the entire tenancy with only a
+      contractual promise of return.
+    tamil: >-
+      வாடகை வைப்புத்தொகை மூன்று மாத வாடகையை மீறக்கூடாது. இந்த ஒப்பந்தம் {observed} மாத
+      வாடகையை வைப்புத்தொகையாகக் கேட்கிறது; இது சட்ட வரம்பை மீறுவதுடன் உங்கள் பணத்தை
+      நீண்ட காலத்திற்கு பிடித்து வைக்கிறது.
+    counter_clause: >-
+      The Security Deposit shall not exceed three (3) months' rent, amounting to
+      Rs. {deposit_amount}, and shall be held by the Landlord exclusively as
+      security for performance of the Tenant's obligations under this Agreement.
+      No part of the Security Deposit shall be treated as rent, advance rent or
+      as a non-refundable fee. The Landlord shall refund the Security Deposit in
+      accordance with Section 11(2) of the Tamil Nadu Regulation of Rights and
+      Responsibilities of Landlords and Tenants Act, 2017.
+    negotiation_tip: >-
+      Offer to split the excess: pay three months up front and the remainder as
+      a post-dated instrument, or point out that a lower deposit reduces the
+      monthly rent the tenant can afford.
+    statute:
+      act: *act
+      section: "11(1)"
+      heading: "Security deposit"
+      quote: >-
+        Save an agreement to the contrary, it shall be unlawful to charge a
+        security deposit in excess of three times the monthly rent.
+      url: *act_url
+      verification: verified
+
+  - id: DEP-002
+    category: deposit
+    title: "Deposit refund window exceeds one month"
+    severity: moderate
+    field: deposit_refund_days
+    operator: greater_than
+    value: 30
+    unit: days
+    penalty_group: deposit_refund
+    tags: [deposit, refund]
+    explanation: >-
+      The agreement allows {observed} days to return your deposit after you hand
+      back the keys. The statutory expectation is one month from vacation. Long
+      refund windows are the most common source of deposit disputes because the
+      tenant loses leverage once possession is handed over.
+    tamil: >-
+      வீட்டைக் காலி செய்த பிறகு ஒரு மாதத்திற்குள் வைப்புத்தொகையைத் திருப்பித் தர வேண்டும்.
+      இந்த ஒப்பந்தம் {observed} நாட்கள் என்று நீட்டிக்கிறது; இது பணத்தை மீட்பதை கடினமாக்கும்.
+    counter_clause: >-
+      The Landlord shall refund the Security Deposit, after deducting only
+      amounts demonstrably due under this Agreement, within thirty (30) days of
+      the Tenant vacating the Premises and returning all keys. Any deduction
+      shall be supported by itemised bills or invoices furnished to the Tenant at
+      the time of refund.
+    negotiation_tip: >-
+      Ask for itemised deductions within seven days of handover and add interest
+      on late refunds; both are easier for a landlord to accept than a shorter
+      refund window.
+    statute:
+      act: *act
+      section: "11(2)"
+      heading: "Security deposit"
+      quote: >-
+        The security deposit shall be refunded to the tenant within one month
+        after vacation of the premises, after making due deduction of any
+        liability of the tenant.
+      url: *act_url
+      verification: verified
+
+  - id: DEP-003
+    category: deposit
+    title: "Deposit declared non-refundable"
+    severity: high
+    field: deposit_non_refundable
+    operator: is_true
+    unit: null
+    penalty_group: deposit_refundability
+    tags: [deposit, forfeiture]
+    explanation: >-
+      The agreement describes the deposit as non-refundable. That converts
+      security into a fee and removes the Act's refund obligation entirely. A
+      landlord may only deduct actual, provable dues; the balance must come back
+      to you.
+    tamil: >-
+      வைப்புத்தொகையை "திரும்பத் தர முடியாதது" என்று கூற முடியாது. பாக்கி இருந்தால் மட்டுமே
+      பிடிக்கலாம்; மீதியை திருப்பித் தர வேண்டும்.
+    counter_clause: >-
+      The Security Deposit is refundable. The Landlord may deduct only sums that
+      are actually due and outstanding under this Agreement, supported by an
+      itemised statement with receipts, and shall refund the balance within
+      thirty (30) days of the Tenant vacating the Premises.
+    negotiation_tip: >-
+      Ask which specific liability the non-refundable amount is meant to cover.
+      If it is a cleaning or painting charge, cap it at a stated rupee amount
+      instead.
+    statute:
+      act: *act
+      section: "11(2)"
+      heading: "Security deposit"
+      quote: >-
+        The security deposit shall be refunded to the tenant within one month
+        after vacation of the premises, after making due deduction of any
+        liability of the tenant.
+      url: *act_url
+      verification: verified
+
+  - id: DEP-004
+    category: deposit
+    title: "Whole deposit forfeited on early exit"
+    severity: high
+    field: deposit_forfeiture_on_early_exit
+    operator: is_true
+    unit: null
+    penalty_group: deposit_forfeiture
+    tags: [deposit, lock_in, forfeiture]
+    explanation: >-
+      The clause lets the landlord keep the entire deposit if you leave early.
+      Forfeiture of a security deposit is not a permitted substitute for proving
+      actual loss, and it is usually the most expensive single term in a lease.
+    tamil: >-
+      பாதியில் வெளியேறினால் முழு வைப்புத்தொகையையும் பறிமுதல் செய்வது நியாயமற்றது.
+      உண்மையான இழப்பை மட்டுமே பிடிக்க முடியும்.
+    counter_clause: >-
+      If the Tenant terminates this Agreement before the expiry of the term, the
+      Landlord shall be entitled only to recover the rent for the notice period
+      specified in this Agreement, and to deduct actual losses evidenced by
+      receipts. The Security Deposit shall not be forfeited and the balance shall
+      be refunded within thirty (30) days.
+    negotiation_tip: >-
+      Offer a fixed exit payment equal to two months' rent as a compromise; it
+      caps your downside while giving the landlord certainty.
+    statute:
+      act: *act
+      section: "11(2)"
+      heading: "Security deposit"
+      quote: >-
+        The security deposit shall be refunded to the tenant within one month
+        after vacation of the premises, after making due deduction of any
+        liability of the tenant.
+      url: *act_url
+      verification: verified
+
+  # ----------------------------------------------------------------- lock-in --
+  - id: LCK-001
+    category: lock_in
+    title: "Lock-in longer than eleven months"
+    severity: moderate
+    field: lock_in_months
+    operator: greater_than
+    value: 11
+    unit: months
+    penalty_group: lock_in_term
+    tags: [lock_in, term]
+    explanation: >-
+      A lock-in of {observed} months removes your ability to end the tenancy for
+      that period. The Act lets a tenant give up possession on the notice agreed
+      in the agreement, so a long lock-in effectively overrides a statutory
+      right and should be justified by a rent concession.
+    tamil: >-
+      {observed} மாத லாக்-இன் காலம் உங்கள் வெளியேறும் உரிமையை நீண்ட காலத்திற்கு
+      பறிக்கிறது. இதற்கு ஈடாக வாடகை குறைப்பு கேளுங்கள்.
+    counter_clause: >-
+      The lock-in period shall be six (6) months from the commencement date.
+      Thereafter either party may terminate this Agreement by giving two (2)
+      months' written notice. The Tenant may terminate during the lock-in period
+      on payment of two (2) months' rent in lieu of notice, without forfeiture of
+      the Security Deposit.
+    negotiation_tip: >-
+      Trade the lock-in for a rent discount or a rent-free maintenance period;
+      landlords weight certainty highly and often accept six months plus notice.
+    statute:
+      act: *act
+      section: "29(2)"
+      heading: "Notice of giving up possession by the tenant"
+      quote: >-
+        The tenant may give up possession of the premises on giving such notice
+        as is required under the tenancy agreement and in the absence of any
+        stipulation relating to such notice, the tenant shall give notice to the
+        landlord of at least one month before giving up possession of the
+        premises.
+      url: *act_url
+      verification: verified
+
+  - id: LCK-002
+    category: lock_in
+    title: "Early-exit penalty exceeds three months' rent"
+    severity: high
+    field: lock_in_penalty_months
+    operator: greater_than
+    value: 3
+    unit: months
+    penalty_group: lock_in_penalty
+    tags: [lock_in, penalty]
+    explanation: >-
+      Breaking the lock-in costs {observed} months of rent. A penalty of that size
+      functions as a second security deposit: it can reach the same order of
+      magnitude as the statutory deposit cap and is very hard to challenge once
+      you have signed.
+    tamil: >-
+      லாக்-இன் முறிவுக்கான அபராதம் {observed} மாத வாடகை. இது இரண்டாவது வைப்புத்தொகை போல
+      செயல்படுவதால் மிக அதிகமானது.
+    counter_clause: >-
+      Where the Tenant terminates this Agreement before the expiry of the lock-in
+      period, the Tenant shall pay an amount equal to two (2) months' rent in
+      lieu of the notice period. Such payment shall be the Landlord's sole remedy
+      and shall not exceed the rent for the unexpired notice period.
+    negotiation_tip: >-
+      Convert the penalty into a notice-period obligation ("pay rent for the
+      notice period") rather than a lump-sum fine; it reads as fair to landlords.
+    statute:
+      act: *act
+      section: "29(2)"
+      heading: "Notice of giving up possession by the tenant"
+      quote: >-
+        The tenant may give up possession of the premises on giving such notice
+        as is required under the tenancy agreement and in the absence of any
+        stipulation relating to such notice, the tenant shall give notice to the
+        landlord of at least one month before giving up possession of the
+        premises.
+      url: *act_url
+      verification: indicative
+
+  # ---------------------------------------------------------------- eviction --
+  - id: EVI-001
+    category: eviction
+    title: "Notice period of under fifteen days"
+    severity: high
+    field: notice_period_days
+    operator: less_than
+    value: 15
+    unit: days
+    penalty_group: notice_period
+    tags: [eviction, notice, headline]
+    explanation: >-
+      You must give only {observed} days' notice to leave. The Act's default when
+      the agreement is silent is one month, and even where a shorter period is
+      agreed it is rarely enforceable in spirit. In practice you would have
+      almost no time to find and move to a new home.
+    tamil: >-
+      {observed} நாட்கள் முன்னறிவிப்பு மிகக் குறைவு. சட்டப்படி ஒரு மாதம் வழங்க வேண்டும்;
+      இல்லையெனில் புதிய வீடு தேட நேரம் இருக்காது.
+    counter_clause: >-
+      Either party may terminate this Agreement by giving the other not less than
+      thirty (30) days' written notice. Notice may be given by email to the
+      addresses recorded in this Agreement, and the notice period shall commence
+      on the date of delivery.
+    negotiation_tip: >-
+      Ask for "one month or rent in lieu" - the alternative payment option gives
+      the landlord comfort and preserves your flexibility.
+    statute:
+      act: *act
+      section: "29(2)"
+      heading: "Notice of giving up possession by the tenant"
+      quote: >-
+        ... in the absence of any stipulation relating to such notice, the tenant
+        shall give notice to the landlord of at least one month before giving up
+        possession of the premises.
+      url: *act_url
+      verification: verified
+
+  - id: EVI-002
+    category: eviction
+    title: "Notice period shorter than thirty days"
+    severity: moderate
+    field: notice_period_days
+    operator: less_than
+    value: 30
+    unit: days
+    penalty_group: notice_period
+    tags: [eviction, notice]
+    explanation: >-
+      The agreed notice of {observed} days is below the one-month statutory
+      default for a tenant giving up possession. Short notice periods make it
+      hard to plan a move and give the landlord an argument that you are in
+      unauthorised occupation if you overstay by a few days.
+    tamil: >-
+      {observed} நாட்கள் என்பது சட்ட வழக்கமான ஒரு மாதத்தை விடக் குறைவு. இதனால்
+      விரைவாக வெளியேற வேண்டிய நிலை ஏற்படும்.
+    counter_clause: >-
+      The notice period for termination by either party shall be thirty (30) days
+      in writing. Where the Tenant vacates without giving full notice, the
+      Landlord may recover rent for the unexpired notice period only, and not any
+      additional penalty.
+    negotiation_tip: >-
+      Anchor on 30 days and offer to allow immediate re-entry and re-letting
+      during your notice period so the landlord loses no rent.
+    statute:
+      act: *act
+      section: "29(2)"
+      heading: "Notice of giving up possession by the tenant"
+      quote: >-
+        ... in the absence of any stipulation relating to such notice, the tenant
+        shall give notice to the landlord of at least one month before giving up
+        possession of the premises.
+      url: *act_url
+      verification: verified
+
+  - id: EVI-003
+    category: eviction
+    title: "Immediate eviction without due process"
+    severity: critical
+    field: allows_immediate_eviction
+    operator: is_true
+    unit: null
+    penalty_group: eviction_process
+    tags: [eviction, due_process, headline]
+    explanation: >-
+      This clause permits the landlord to evict you immediately, typically by
+      force or by cutting services. Under the Act a tenant may only be evicted by
+      an order of the Rent Court on one of the enumerated grounds; self-help
+      eviction is not available to a landlord regardless of what the agreement
+      says.
+    tamil: >-
+      நீதிமன்ற உத்தரவு இல்லாமல் உடனடியாக வெளியேற்றவோ பூட்டுவதோ முடியாது. அத்தகைய
+      நிபந்தனை சட்டப்படி செல்லாது.
+    counter_clause: >-
+      The Tenant shall not be evicted from the Premises except in accordance with
+      an order of the Rent Court under Section 21 of the Tamil Nadu Regulation of
+      Rights and Responsibilities of Landlords and Tenants Act, 2017. The
+      Landlord shall not disconnect water, electricity or other essential
+      services, nor change locks or remove the Tenant's belongings, without such
+      an order.
+    negotiation_tip: >-
+      This is a red-line clause. If the landlord insists, add a written
+      acknowledgement that the Rent Court alone may order possession, which
+      neutralises the practical risk.
+    statute:
+      act: *act
+      section: "21(1)"
+      heading: "Repossession of the Premises by the Landlord"
+      quote: >-
+        A tenant shall not be evicted during the continuance of tenancy
+        agreement except in accordance with the provisions of sub-section (2).
+      url: *act_url
+      verification: verified
+
+  # --------------------------------------------------------------- rent hike --
+  - id: RNT-001
+    category: rent_hike
+    title: "Rent increase above ten percent"
+    severity: moderate
+    field: rent_increase_percent
+    operator: greater_than
+    value: 10
+    unit: percent
+    penalty_group: rent_increase_rate
+    tags: [rent_hike, escalation]
+    explanation: >-
+      The clause allows a {observed}% increase. There is no statutory cap on
+      agreed increases, but a double-digit escalation compounds quickly: at
+      {observed}% a year your rent rises by more than a third over three years.
+      Fix the amount in rupees rather than a percentage if you can.
+    tamil: >-
+      ஆண்டுக்கு {observed}% வாடகை உயர்வு அதிகமாகும். மூன்று ஆண்டுகளில் வாடகை மூன்றில்
+      ஒரு பங்குக்கும் மேல் உயரும்; எனவே ரூபாயில் நிலையான உயர்வை ஒப்புக்கொள்ளுங்கள்.
+    counter_clause: >-
+      The rent may be revised once in every twelve (12) months by a fixed amount
+      of Rs. {increase_amount}, and in no event by more than eight per cent (8%)
+      of the then-prevailing rent. No revision shall take effect during the
+      currency of a fixed-term tenancy.
+    negotiation_tip: >-
+      Ask for a fixed rupee escalation with a floor on the revision date; both are
+      easy to grant and remove the compounding effect.
+    statute:
+      act: *act
+      section: "9(1)"
+      heading: "Revision of rent"
+      quote: >-
+        Revision of rent between the landlord and the tenant shall be as per the
+        terms set out in the tenancy agreement.
+      url: *act_url
+      verification: verified
+
+  - id: RNT-002
+    category: rent_hike
+    title: "Rent increase above twenty-five percent"
+    severity: high
+    field: rent_increase_percent
+    operator: greater_than
+    value: 25
+    unit: percent
+    penalty_group: rent_increase_rate
+    tags: [rent_hike, escalation, headline]
+    explanation: >-
+      A {observed}% increase is far outside normal practice for residential
+      tenancies in Tamil Nadu. Even where the amount is agreed in the agreement,
+      an increase of this size in a fixed-term tenancy is only valid if the
+      agreement expressly sets out the amount or the method of working it out.
+    tamil: >-
+      {observed}% வாடகை உயர்வு வழக்கத்திற்கு மிக அதிகம். நிலையான கால ஒப்பந்தத்தில்
+      இது செல்லுபடியாக வேண்டுமானால் தொகை அல்லது கணக்கீட்டு முறை வெளிப்படையாக
+      எழுதப்பட்டிருக்க வேண்டும்.
+    counter_clause: >-
+      The rent shall not be increased during the fixed term of this Agreement.
+      Any revision on renewal shall not exceed five per cent (5%) of the last rent
+      paid, and shall be communicated in writing at least three (3) months before
+      it becomes due.
+    negotiation_tip: >-
+      Point to comparable rents in the same locality; a rent-increase above 10%
+      in a single year is difficult for a landlord to justify in the Rent Court.
+    statute:
+      act: *act
+      section: "9(4)"
+      heading: "Revision of rent"
+      quote: >-
+        In case the premises has been let for a fixed term, rent may not be
+        increased during the currency of the tenancy period unless the amount of
+        increase or method of working out the increase is expressly set out in
+        the tenancy agreement.
+      url: *act_url
+      verification: verified
+
+  - id: RNT-003
+    category: rent_hike
+    title: "Rent revised more often than every twelve months"
+    severity: high
+    field: rent_increase_frequency_months
+    operator: less_than
+    value: 12
+    unit: months
+    penalty_group: rent_increase_frequency
+    tags: [rent_hike, frequency]
+    explanation: >-
+      The agreement permits a revision every {observed} months. Rent is expected
+      to be revised no more than once in twelve months, and a shorter cycle
+      steadily erodes your budget while making the tenancy unpredictable.
+    tamil: >-
+      ஒவ்வொரு {observed} மாதங்களுக்கும் வாடகை உயர்வு அனுமதிக்கப்படுகிறது. ஆண்டுக்கு
+      ஒருமுறைக்கு மேல் வாடகையை உயர்த்தக் கூடாது.
+    counter_clause: >-
+      The rent shall be revised not more than once in twelve (12) months, on the
+      anniversary of the commencement date, and only by written notice given
+      three (3) months in advance of the revised rent becoming due.
+    negotiation_tip: >-
+      Lock the revision date to the lease anniversary in writing; ambiguity about
+      "every six months" is where most escalations creep in.
+    statute:
+      act: *act
+      section: "9(2)"
+      heading: "Revision of rent"
+      quote: >-
+        Save as agreed in the agreement, the landlord shall give a notice in
+        writing three months before the revised rent becomes due.
+      url: *act_url
+      verification: indicative
+
+  - id: RNT-004
+    category: rent_hike
+    title: "Rent revision notice shorter than three months"
+    severity: moderate
+    field: rent_increase_notice_days
+    operator: less_than
+    value: 90
+    unit: days
+    penalty_group: rent_increase_notice
+    tags: [rent_hike, notice]
+    explanation: >-
+      Only {observed} days' notice of a rent increase is required. The Act
+      expects three months' written notice before the revised rent falls due,
+      which is the window you need to decide whether to renew or move.
+    tamil: >-
+      வாடகை உயர்வுக்கு {observed} நாட்கள் மட்டுமே முன்னறிவிப்பு. சட்டப்படி மூன்று மாத
+      எழுத்துப்பூர்வ முன்னறிவிப்பு தேவை.
+    counter_clause: >-
+      The Landlord shall give the Tenant not less than three (3) months' written
+      notice of any revision of rent, specifying the revised amount and the date
+      from which it is payable. Rent shall not be revised retrospectively.
+    negotiation_tip: >-
+      A three-month notice costs the landlord nothing, so it is usually conceded
+      without a rent trade-off.
+    statute:
+      act: *act
+      section: "9(2)"
+      heading: "Revision of rent"
+      quote: >-
+        Save as agreed in the agreement, the landlord shall give a notice in
+        writing three months before the revised rent becomes due.
+      url: *act_url
+      verification: verified
+
+  - id: RNT-005
+    category: rent_hike
+    title: "Unilateral rent revision without tenant consent"
+    severity: high
+    field: rent_increase_unilateral
+    operator: is_true
+    unit: null
+    penalty_group: rent_increase_consent
+    tags: [rent_hike, consent, headline]
+    explanation: >-
+      The landlord can raise the rent at their own discretion without your
+      agreement. Rent revision must follow the agreement; a unilateral power
+      turns a fixed rent into an open-ended one and is the type of term the Rent
+      Authority is most likely to strike down.
+    tamil: >-
+      உரிமையாளர் ஒருதலைப்பட்சமாக வாடகையை உயர்த்த முடியாது. உங்கள் ஒப்புதலோடு மட்டுமே
+      உயர்த்த வேண்டும்.
+    counter_clause: >-
+      Any revision of rent shall be made only by mutual written agreement of the
+      Landlord and the Tenant, or in accordance with an order of the Rent
+      Authority under Section 10 of the Act. No unilateral revision shall be
+      binding on the Tenant.
+    negotiation_tip: >-
+      Replace the unilateral right with a "refer to Rent Authority" fallback;
+      landlords accept it because it preserves their remedy without giving them
+      unilateral power.
+    statute:
+      act: *act
+      section: "9(1)"
+      heading: "Revision of rent"
+      quote: >-
+        Revision of rent between the landlord and the tenant shall be as per the
+        terms set out in the tenancy agreement.
+      url: *act_url
+      verification: verified
+
+  - id: RNT-006
+    category: rent_hike
+    title: "Rent increased during the fixed term"
+    severity: moderate
+    field: rent_increase_during_fixed_term
+    operator: is_true
+    unit: null
+    penalty_group: rent_increase_fixed_term
+    tags: [rent_hike, fixed_term]
+    explanation: >-
+      The agreement allows the rent to move during a fixed-term tenancy. The Act
+      bars an increase during the term unless the amount, or the method of
+      calculating it, is expressly written into the agreement.
+    tamil: >-
+      நிலையான காலத்திற்குள் வாடகையை உயர்த்த முடியாது. தொகை அல்லது கணக்கீட்டு முறை
+      ஒப்பந்தத்தில் தெளிவாக இல்லாவிட்டால் உயர்வு செல்லாது.
+    counter_clause: >-
+      The rent shall remain fixed for the entire term of this Agreement. Any
+      increase shall take effect only on renewal, by mutual written agreement, or
+      as expressly set out in a signed addendum that states the revised amount.
+    negotiation_tip: >-
+      If the landlord needs an escalation, negotiate a single pre-agreed step-up
+      on a fixed date, written as a rupee figure.
+    statute:
+      act: *act
+      section: "9(4)"
+      heading: "Revision of rent"
+      quote: >-
+        In case the premises has been let for a fixed term, rent may not be
+        increased during the currency of the tenancy period unless the amount of
+        increase or method of working out the increase is expressly set out in
+        the tenancy agreement.
+      url: *act_url
+      verification: verified
+
+  # ------------------------------------------------------------ entry rights --
+  - id: ENT-001
+    category: entry_rights
+    title: "Entry with less than twenty-four hours' notice"
+    severity: moderate
+    field: entry_notice_hours
+    operator: less_than
+    value: 24
+    unit: hours
+    penalty_group: entry_notice
+    tags: [entry_rights, privacy]
+    explanation: >-
+      The landlord may enter after only {observed} hours' notice. The Act requires
+      written notice of at least twenty-four hours, specifying the reason and the
+      time of entry, so a shorter window weakens your quiet enjoyment of the home.
+    tamil: >-
+      வீட்டிற்குள் நுழைய {observed} மணி நேர முன்னறிவிப்பு மட்டுமே. சட்டப்படி இருபத்துநான்கு
+      மணி நேர எழுத்துப்பூர்வ முன்னறிவிப்பு தேவை.
+    counter_clause: >-
+      The Landlord shall give the Tenant at least twenty-four (24) hours' written
+      notice before entering the Premises, stating the reason for entry and the
+      date and time of entry, which shall be between 7.00 A.M. and 8.00 P.M.
+    negotiation_tip: >-
+      Offer key handover at a neighbour's house or a lockbox; it removes the
+      landlord's practical need for unannounced visits.
+    statute:
+      act: *act
+      section: "17(1)"
+      heading: "Entry with notice"
+      quote: >-
+        A landlord or the property manager may enter a premises in accordance
+        with written notice given to the tenant at least twenty-four hours before
+        the time of entry ...
+      url: *act_url
+      verification: verified
+
+  - id: ENT-002
+    category: entry_rights
+    title: "Entry on under four hours' notice"
+    severity: high
+    field: entry_notice_hours
+    operator: less_than
+    value: 4
+    unit: hours
+    penalty_group: entry_notice
+    tags: [entry_rights, privacy, headline]
+    explanation: >-
+      A notice window of {observed} hours is effectively no notice at all - the
+      landlord can arrive while you are at work. This is a significant privacy
+      term and should not be signed as drafted.
+    tamil: >-
+      {observed} மணி நேர முன்னறிவிப்பு என்பது முன்னறிவிப்பு இல்லாததற்குச் சமம்.
+      இது தனியுரிமையை நேரடியாகப் பாதிக்கிறது.
+    counter_clause: >-
+      Except in an emergency involving risk to life or property, the Landlord
+      shall not enter the Premises without at least twenty-four (24) hours'
+      prior written notice to the Tenant, and shall enter only between 7.00 A.M.
+      and 8.00 P.M. in the Tenant's presence or with the Tenant's consent.
+    negotiation_tip: >-
+      Add an emergency carve-out (fire, flooding, gas leak); it addresses the
+      landlord's real concern and lets you keep the 24-hour rule.
+    statute:
+      act: *act
+      section: "17(1)"
+      heading: "Entry with notice"
+      quote: >-
+        A landlord or the property manager may enter a premises in accordance
+        with written notice given to the tenant at least twenty-four hours before
+        the time of entry ...
+      url: *act_url
+      verification: verified
+
+  - id: ENT-003
+    category: entry_rights
+    title: "Unrestricted right of entry"
+    severity: high
+    field: unrestricted_entry
+    operator: is_true
+    unit: null
+    penalty_group: entry_unrestricted
+    tags: [entry_rights, privacy, headline]
+    explanation: >-
+      The landlord claims a right to enter at any time, without notice. The Act
+      conditions every entry on written notice unless there is an emergency, so
+      this term both breaches the statutory scheme and removes your privacy
+      protection in practice.
+    tamil: >-
+      எப்போது வேண்டுமானாலும் வீட்டிற்குள் நுழையலாம் என்ற நிபந்தனை சட்டவிரோதம். முன்னறிவிப்பு
+      இல்லாமல் நுழைய முடியாது.
+    counter_clause: >-
+      The Tenant shall have exclusive possession of the Premises. The Landlord
+      may enter only as permitted by Section 17 of the Tamil Nadu Regulation of
+      Rights and Responsibilities of Landlords and Tenants Act, 2017, that is,
+      on at least twenty-four (24) hours' written notice stating the reason for
+      entry, or without notice in a genuine emergency affecting life or property.
+    negotiation_tip: >-
+      Replace "at any time" with "on 24 hours' notice, or immediately in an
+      emergency"; the sentence reads almost the same to a landlord but removes
+      the risk.
+    statute:
+      act: *act
+      section: "17"
+      heading: "Entry with notice"
+      quote: >-
+        A landlord or the property manager may enter a premises in accordance
+        with written notice given to the tenant at least twenty-four hours before
+        the time of entry ...
+      url: *act_url
+      verification: verified
+
+  - id: ENT-004
+    category: entry_rights
+    title: "Landlord retains a set of keys"
+    severity: low
+    field: landlord_retains_keys
+    operator: is_true
+    unit: null
+    penalty_group: entry_keys
+    tags: [entry_rights, keys]
+    explanation: >-
+      The landlord keeps a duplicate key. That is common, but it must be paired
+      with a notice obligation; otherwise it silently enables entry without your
+      knowledge.
+    tamil: >-
+      உரிமையாளர் கூடுதல் சாவியை வைத்திருப்பது தனியுரிமைக்கு அச்சுறுத்தல். இதற்கு
+      முன்னறிவிப்பு கட்டாயம் என்பதை எழுதி வையுங்கள்.
+    counter_clause: >-
+      The Landlord may retain a duplicate key solely for emergency access and
+      shall not use it to enter the Premises except in accordance with Section 17
+      of the Act. The Tenant may change the lock cylinder at their own cost,
+      provided a key is supplied to the Landlord on request.
+    negotiation_tip: >-
+      Ask instead for permission to change the lock and give the landlord a key in
+      a sealed envelope; it converts a privacy risk into a practical control.
+    statute:
+      act: *act
+      section: "17"
+      heading: "Entry with notice"
+      quote: >-
+        A landlord or the property manager may enter a premises in accordance
+        with written notice given to the tenant at least twenty-four hours before
+        the time of entry ...
+      url: *act_url
+      verification: indicative
+
+  # ------------------------------------------------------------- maintenance --
+  - id: MNT-001
+    category: maintenance
+    title: "Tenant made responsible for structural repairs"
+    severity: high
+    field: tenant_pays_structural_repairs
+    operator: is_true
+    unit: null
+    penalty_group: structural_repairs
+    tags: [maintenance, structural, headline]
+    explanation: >-
+      The agreement shifts structural repairs - roof, walls, plumbing lines,
+      electrical wiring - onto you. The Second Schedule to the Act allocates
+      those items to the landlord, and the obligation cannot be contracted out,
+      so this term is unenforceable and potentially very expensive.
+    tamil: >-
+      கூரை, சுவர், குழாய், மின் வயரிங் போன்ற கட்டமைப்பு பழுதுகளை சரிசெய்வது
+      உரிமையாளரின் பொறுப்பு. இதை ஒப்பந்தத்தால் மாற்ற முடியாது.
+    counter_clause: >-
+      The Landlord shall be responsible for structural repairs, whitewashing and
+      painting of walls, replacement of plumbing lines and internal and external
+      electrical wiring, in accordance with Section 15 and the Second Schedule to
+      the Tamil Nadu Regulation of Rights and Responsibilities of Landlords and
+      Tenants Act, 2017. The Tenant shall be responsible only for the periodic
+      repairs listed in Part B of that Schedule.
+    negotiation_tip: >-
+      Offer to bear periodic items (taps, switches, drain cleaning) up to a capped
+      annual amount in exchange for the landlord keeping structural repairs.
+    statute:
+      act: *act
+      section: "15(1)"
+      heading: "Repair and maintenance of property"
+      quote: >-
+        Notwithstanding any contract in writing to the contrary, the landlord and
+        the tenant shall be bound to keep the premises in as good a condition as
+        at the commencement of the tenancy, except for normal wear and tear, and
+        shall be responsible for the respective repairs and maintenance as
+        specified in the Second Schedule.
+      url: *act_url
+      verification: verified
+
+  - id: MNT-002
+    category: maintenance
+    title: "Tenant bears all repairs and maintenance"
+    severity: high
+    field: tenant_pays_all_repairs
+    operator: is_true
+    unit: null
+    penalty_group: repairs_all
+    tags: [maintenance, headline]
+    explanation: >-
+      The clause makes you responsible for every repair, including those the
+      statute assigns to the landlord. Combined with a large deposit, it can turn
+      a routine plumbing failure into a deduction from your money.
+    tamil: >-
+      அனைத்து பழுதுகளையும் வாடகைதாரர் ஏற்பது சட்டத்திற்கு முரணானது. கட்டமைப்பு பழுதுகள்
+      உரிமையாளரின் பொறுப்பு.
+    counter_clause: >-
+      Repairs and maintenance shall be shared as provided in Section 15 and the
+      Second Schedule to the Act: the Landlord shall attend to structural and
+      major repairs within seven (7) days of written notice, and the Tenant shall
+      attend to routine wear-and-tear items specified in Part B of that Schedule.
+    negotiation_tip: >-
+      Ask for a repair call-out SLA (e.g. 7 days) and a named plumber/electrician;
+      landlords concede process commitments more readily than cost commitments.
+    statute:
+      act: *act
+      section: "15(1)"
+      heading: "Repair and maintenance of property"
+      quote: >-
+        Notwithstanding any contract in writing to the contrary, the landlord and
+        the tenant shall be bound to keep the premises in as good a condition as
+        at the commencement of the tenancy, except for normal wear and tear ...
+      url: *act_url
+      verification: verified
+
+  - id: MNT-003
+    category: maintenance
+    title: "Landlord's repair obligation waived"
+    severity: high
+    field: landlord_repair_duty_waived
+    operator: is_true
+    unit: null
+    penalty_group: repairs_waiver
+    tags: [maintenance, waiver]
+    explanation: >-
+      The agreement purports to waive the landlord's duty to keep the premises
+      habitable. Section 15 opens with "notwithstanding any contract in writing
+      to the contrary", so the waiver does not displace the statutory duty - but
+      it will still be used against you in an argument, and it removes your
+      leverage.
+    tamil: >-
+      வீட்டைப் பழுதுபார்க்கும் உரிமையாளரின் கடமையை ஒப்பந்தத்தால் நீக்க முடியாது.
+      அத்தகைய நிபந்தனை செல்லாது.
+    counter_clause: >-
+      Nothing in this Agreement shall relieve the Landlord of the obligation to
+      keep the Premises habitable and in good repair as required by Section 15 of
+      the Act, and any provision to the contrary shall be void to that extent.
+    negotiation_tip: >-
+      Delete the waiver and add a mutual acknowledgement that the Act prevails
+      over inconsistent terms; it is a low-cost concession for the landlord.
+    statute:
+      act: *act
+      section: "15(1)"
+      heading: "Repair and maintenance of property"
+      quote: >-
+        Notwithstanding any contract in writing to the contrary, the landlord and
+        the tenant shall be bound to keep the premises in as good a condition as
+        at the commencement of the tenancy ...
+      url: *act_url
+      verification: verified
+
+  - id: MNT-004
+    category: maintenance
+    title: "Landlord may withhold essential services"
+    severity: high
+    field: essential_services_cutoff_allowed
+    operator: is_true
+    unit: null
+    penalty_group: essential_services
+    tags: [maintenance, essential_services, headline]
+    explanation: >-
+      The agreement allows water, electricity or other essential supplies to be
+      cut off, usually to pressure you into paying or vacating. Section 20
+      expressly prohibits this, and the Rent Authority can order immediate
+      restoration and levy a penalty.
+    tamil: >-
+      தண்ணீர், மின்சாரம் போன்ற அத்தியாவசிய சேவைகளை நிறுத்தக் கூடாது. இது சட்டப்படி
+      தடைசெய்யப்பட்டுள்ளது.
+    counter_clause: >-
+      The Landlord shall not cut off or withhold water, electricity, lifts,
+      parking or any other essential supply or service to the Premises. Any
+      dispute regarding rent or possession shall be resolved in accordance with
+      the Act, and not by withholding essential services.
+    negotiation_tip: >-
+      This is a legal red line; if the landlord resists, propose arbitration or
+      Rent Authority reference as the dispute route instead.
+    statute:
+      act: *act
+      section: "20(1)"
+      heading: "Cutting off withholding essential supply or service"
+      quote: >-
+        No landlord or tenant either by himself or through any person shall
+        cutoff or withhold any essential supply or service in the premises
+        occupied by the tenant or the landlord.
+      url: *act_url
+      verification: verified
+
+  # ---------------------------------------------------------- registrations --
+  - id: REG-001
+    category: general
+    title: "Tenancy agreement not registered with the Rent Authority"
+    severity: moderate
+    field: agreement_unregistered
+    operator: is_true
+    applies_to: [general]
+    unit: null
+    penalty_group: registration
+    tags: [formalities, registration]
+    explanation: >-
+      The agreement says it will not be registered with the Rent Authority.
+      Registration is the mechanism that makes the tenancy provable: without it,
+      statements in the agreement are not received as evidence of the facts, and
+      you lose the fastest route to enforcement.
+    tamil: >-
+      வாடகை ஆணையத்தில் பதிவு செய்யாத ஒப்பந்தம் சான்றாக ஏற்கப்படாது. பதிவு செய்வது
+      உங்கள் உரிமைகளைப் பாதுகாக்கும்.
+    counter_clause: >-
+      The parties shall jointly submit this Agreement to the Rent Authority for
+      registration in the form prescribed under the First Schedule, as required by
+      Section 4 of the Act, and the Landlord shall provide the Tenant with the
+      registration number and one original signed agreement within fifteen (15)
+      days of registration.
+    negotiation_tip: >-
+      Offer to handle the filing yourself; the cost is small and the protection is
+      significant.
+    statute:
+      act: *act
+      section: "4"
+      heading: "Tenancy Agreement"
+      quote: >-
+        ... no person shall, after the commencement of this Act, let or take on
+        rent any premises except by an agreement in writing, which shall be
+        informed to the Rent Authority by the landlord and tenant jointly ...
+      url: *act_url
+      verification: verified
+
+  - id: REG-002
+    category: general
+    title: "Original signed agreement not given to tenant"
+    severity: low
+    field: original_agreement_withheld
+    operator: is_true
+    applies_to: [general]
+    unit: null
+    penalty_group: original_agreement
+    tags: [formalities, documents]
+    explanation: >-
+      The landlord will keep the only signed original. You are entitled to one
+      original signed and registered agreement within fifteen days of signing;
+      without it, you cannot prove the terms you are relying on.
+    tamil: >-
+      கையொப்பமிட்ட ஒப்பந்தத்தின் ஒரு அசலை வாடகைதாரருக்கு வழங்க வேண்டும். இல்லையெனில்
+      நிபந்தனைகளை நிரூபிக்க முடியாது.
+    counter_clause: >-
+      The Landlord shall provide the Tenant with one original signed and
+      registered agreement within fifteen (15) days of execution, as required by
+      Section 12 of the Act.
+    negotiation_tip: >-
+      Nothing to trade here - insist on it as a document-handling formality
+      rather than a negotiation point.
+    statute:
+      act: *act
+      section: "12"
+      heading: "Agreement to be given to the tenant"
+      quote: >-
+        After the tenancy agreement has been signed by both the landlord and
+        tenant, the landlord shall give one original signed and registered
+        agreement to the tenant within fifteen days of the agreement being signed
+        by them ...
+      url: *act_url
+      verification: verified
