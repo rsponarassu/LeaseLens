@@ -111,6 +111,47 @@ drops the splash as soon as the session is known, `8000` plays the clip once.
 
 ---
 
+## Deploy (Render, one container)
+
+[`Dockerfile`](Dockerfile) builds the client and the API into one image, so a single service
+serves both and there is no CORS to configure.
+
+Dashboard -> **New Web Service** -> connect the repo, then:
+
+| Field | Value |
+| --- | --- |
+| Language | **Docker** |
+| Dockerfile Path | `./Dockerfile` (repo root; this is the path Render asks for) |
+| Docker Command | leave empty - the image `CMD` starts `uvicorn` on `$PORT` |
+| Health Check Path | `/api/v1/health` |
+
+Environment variables. Render also passes each one to the image build as a build argument,
+which is how `VITE_*` reaches Vite - no separate build-arg field to fill in:
+
+```
+ENVIRONMENT=production
+ALLOWED_ORIGINS=https://<your-service>.onrender.com
+CACHE_MAX_BYTES_MB=128          # a free instance has 512 MB of RAM
+SAMPLE_WARM_ON_STARTUP=false    # keeps cold starts short
+VITE_SUPABASE_URL=https://<project>.supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_...
+# ANTHROPIC_API_KEY / GEMINI_API_KEY are optional: the rule engine answers without them
+```
+
+Build and run it locally the same way:
+
+```bash
+docker build -t leaselens \
+  --build-arg VITE_SUPABASE_URL=https://<project>.supabase.co \
+  --build-arg VITE_SUPABASE_ANON_KEY=sb_publishable_... .
+docker run -p 8000:8000 leaselens
+```
+
+`frontend/.env` is excluded by [`.dockerignore`](.dockerignore) on purpose: the image takes
+its configuration from build arguments, never from a developer's laptop.
+
+---
+
 ## Accounts and saved reviews (Supabase)
 
 Supabase is optional. Without keys the app runs in **demo mode**: the profile and the

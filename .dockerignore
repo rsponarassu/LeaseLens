@@ -1,0 +1,28 @@
+# Anything the image builds or fetches itself is dead weight in the build context.
+
+.git
+.gitignore
+.gitattributes
+.github
+**/node_modules
+frontend/dist
+**/__pycache__
+**/*.py[cod]
+.venv
+venv
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+# Local configuration must never be baked in. Render supplies VITE_* as build
+# arguments; a local build passes them with --build-arg.
+frontend/.env
+frontend/.env.*
+.env
+.env.local
+
+# Not needed to run the service.
+tests
+supabase
+*.md
+Build LeaseLens Lease Analyzer.zip

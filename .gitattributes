@@ -1,0 +1,5 @@
+# Files a shell or Docker reads must stay LF even on a Windows checkout: a CRLF
+# Dockerfile fails with "no such file or directory" on every RUN line.
+Dockerfile       text eol=lf
+.dockerignore    text eol=lf
+*.sh             text eol=lf
