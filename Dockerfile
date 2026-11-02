@@ -29,6 +29,9 @@ ENV VITE_SUPABASE_URL=${VITE_SUPABASE_URL} \
 # tsc --noEmit runs first, so a type error fails the image instead of shipping.
 RUN npm run build
 
+# Fail here, with a clear message, rather than one layer later at the COPY.
+RUN test -f /web/dist/index.html
+
 # ---- 2. Runtime ------------------------------------------------------------
 FROM python:3.12-slim AS runtime
 
@@ -49,10 +52,13 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# app/ holds the rule base and the demonstrable samples; frontend/dist is what
-# _mount_frontend serves at "/". Config resolves both relative to /app.
+# app/ holds the rule base and the demonstrable samples; the client is what
+# _mount_frontend serves at "/". Both are resolved relative to /app by config.
 COPY app ./app
-COPY frontend/dist ./frontend/dist
+
+# dist/ comes from the `web` stage above, never from the build context: it is
+# gitignored and dockerignored, so a context copy would fail with "not found".
+COPY --from=web /web/dist ./frontend/dist
 
 # The server never writes to disk, so an unprivileged user costs nothing.
 RUN useradd --create-home --uid 1000 leaselens
