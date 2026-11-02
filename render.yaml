@@ -29,6 +29,5 @@ services:
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
         sync: false
-      # Optional: with no LLM key the deterministic rule engine answers on its own.
-      - key: ANTHROPIC_API_KEY
-        sync: false
+      # Add ANTHROPIC_API_KEY (or GEMINI_API_KEY) in the dashboard later if you want
+      # the model-written explanations; the rule engine answers without one.
