@@ -1,0 +1,34 @@
+# Render Blueprint: one Docker web service that builds the Vite client and runs
+# the API from the same process, so the app and the API share one origin.
+#
+# Dashboard -> New -> Blueprint -> pick this repo -> Apply. Render prompts for the
+# values marked `sync: false` during that flow; they are never stored in git.
+
+services:
+  - type: web
+    name: leaselens
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    autoDeployTrigger: commit # redeploy on every push to main
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      # A free instance has 512 MB of RAM; the default 512 MB heap budget would
+      # exceed it as soon as two annotated PDFs are cached.
+      - key: CACHE_MAX_BYTES_MB
+        value: 128
+      # Analysing the three demo leases at boot makes a cold start slower than the
+      # first request it is trying to answer. They warm on demand instead.
+      - key: SAMPLE_WARM_ON_STARTUP
+        value: false
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      # Optional: with no LLM key the deterministic rule engine answers on its own.
+      - key: ANTHROPIC_API_KEY
+        sync: false
